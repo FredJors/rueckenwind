@@ -1,0 +1,338 @@
+/* ---------------------------------------------------------------------------
+   Rückenwind – Styles
+   Look angelehnt an die Mammotion-„Yuka"-App: sehr hell, große Hero-Fläche,
+   weiße Pills/Panels mit großem Radius, dunkler CTA in voller Breite.
+--------------------------------------------------------------------------- */
+
+:root {
+  --bg: #f4f5f7;
+  --panel: #ffffff;
+  --text: #141c28;
+  --text-soft: #6b7686;
+  --accent: #22c55e;
+  --cta: #10161f;
+  --danger: #dc2626;
+  --shadow: 0 8px 24px rgba(20, 28, 40, 0.06);
+  --radius-panel: 22px;
+  --radius-btn: 15px;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+/* hidden-Attribut muss auch gegen display:flex-Regeln gewinnen */
+[hidden] {
+  display: none !important;
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: "Inter", system-ui, sans-serif;
+  font-size: 15px;
+  line-height: 1.45;
+  -webkit-font-smoothing: antialiased;
+}
+
+.app {
+  max-width: 520px;
+  margin: 0 auto;
+  padding: 16px 16px 32px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+/* --- Header ---------------------------------------------------------- */
+
+.header {
+  padding: 4px 6px 0;
+}
+
+.header__name {
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+
+/* --- Karten-Panel (Hero) ---------------------------------------------- */
+
+.map-panel {
+  position: relative;
+  height: 55vh;
+  min-height: 320px;
+  border-radius: var(--radius-panel);
+  overflow: hidden;
+  background: var(--panel);
+  box-shadow: var(--shadow);
+}
+
+.map-panel__map {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+}
+
+.map-panel__map.is-drawing {
+  cursor: crosshair;
+}
+
+/* Wind-Partikel-Overlay: liegt über der Karte, fängt keine Events ab.
+   Explizite Größe nötig: Canvas ist ein Replaced Element, inset:0 allein
+   streckt es nicht. */
+.map-panel__canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 500;
+  pointer-events: none;
+}
+
+.map-panel__drop-hint {
+  position: absolute;
+  inset: 0;
+  z-index: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(244, 245, 247, 0.85);
+  font-weight: 600;
+  pointer-events: none;
+}
+
+/* --- Schwebe-Badge über der Karte ------------------------------------- */
+
+.wind-badge {
+  position: absolute;
+  top: 14px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 700;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 8px 14px;
+  background: var(--panel);
+  border-radius: 999px;
+  box-shadow: var(--shadow);
+  font-size: 13px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.wind-badge__icon {
+  color: var(--accent);
+  flex-shrink: 0;
+}
+
+/* --- Stat-Pills -------------------------------------------------------- */
+
+.pills {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+}
+
+.pill {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  padding: 14px;
+  background: var(--panel);
+  border-radius: var(--radius-panel);
+  box-shadow: var(--shadow);
+}
+
+.pill__icon {
+  color: var(--text-soft);
+}
+
+.pill__value {
+  font-size: 17px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+
+.pill__label {
+  font-size: 12px;
+  color: var(--text-soft);
+}
+
+/* --- Eingabe-Panel ------------------------------------------------------ */
+
+.input-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 18px;
+  background: var(--panel);
+  border-radius: var(--radius-panel);
+  box-shadow: var(--shadow);
+}
+
+.status {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.status__dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--accent);
+  flex-shrink: 0;
+}
+
+.status__dot.is-loading {
+  animation: pulse 1.1s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  50% { opacity: 0.25; }
+}
+
+.field-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.field__label {
+  font-size: 12px;
+  color: var(--text-soft);
+}
+
+.field input[type="date"] {
+  font: inherit;
+  font-size: 14px;
+  color: var(--text);
+  padding: 10px 12px;
+  border: 1px solid #e4e7ec;
+  border-radius: var(--radius-btn);
+  background: var(--bg);
+  width: 100%;
+  min-width: 0;
+}
+
+.field input[type="date"]:focus {
+  outline: 2px solid var(--text);
+  outline-offset: -1px;
+}
+
+.button-row {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 10px 14px;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text);
+  background: var(--bg);
+  border: 1px solid #e4e7ec;
+  border-radius: var(--radius-btn);
+  cursor: pointer;
+}
+
+.btn:hover {
+  background: #eceef1;
+}
+
+.btn[aria-pressed="true"] {
+  background: var(--text);
+  color: #fff;
+  border-color: var(--text);
+}
+
+.btn--small {
+  font-size: 13px;
+  padding: 8px 12px;
+}
+
+.meta-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  font-size: 13px;
+  color: var(--text-soft);
+  min-height: 1em;
+}
+
+.meta-row__length {
+  font-weight: 600;
+  color: var(--text);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.meta-row__hint {
+  text-align: right;
+}
+
+.error-line {
+  margin: 0;
+  font-size: 13px;
+  color: var(--danger);
+}
+
+/* --- CTA ---------------------------------------------------------------- */
+
+.cta {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  width: 100%;
+  padding: 16px;
+  font: inherit;
+  font-size: 16px;
+  font-weight: 600;
+  color: #fff;
+  background: var(--cta);
+  border: none;
+  border-radius: var(--radius-btn);
+  cursor: pointer;
+}
+
+.cta:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.cta__spinner {
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* Leaflet-Attribution dezenter */
+.leaflet-control-attribution {
+  font-size: 10px;
+  background: rgba(255, 255, 255, 0.7) !important;
+}
