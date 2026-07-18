@@ -19,6 +19,13 @@ const ROUTE_STYLE = {
   lineJoin: 'round',
 };
 
+// Farben der Rückenwind-Bilanz (tail = schiebt, head = bremst)
+const CATEGORY_COLORS = {
+  tail: '#22c55e',
+  cross: '#9aa5b4',
+  head: '#e5484d',
+};
+
 export function createMap(container, { onRouteChange }) {
   const map = L.map(container, { center: GERMANY_CENTER, zoom: GERMANY_ZOOM });
 
@@ -33,9 +40,14 @@ export function createMap(container, { onRouteChange }) {
   let points = [];        // aktive Route als [{lat, lon}, ...]
   let polyline = null;
   let waypointLayer = L.layerGroup().addTo(map); // Punkte im Zeichenmodus
+  let segmentLayer = L.layerGroup().addTo(map);  // Rückenwind-Einfärbung
   let drawing = false;
 
   function redraw() {
+    // Jede Routenänderung macht eine vorhandene Einfärbung ungültig.
+    segmentLayer.clearLayers();
+    if (polyline) polyline.setStyle({ opacity: ROUTE_STYLE.opacity });
+
     const latLngs = points.map((p) => [p.lat, p.lon]);
     if (polyline) {
       polyline.setLatLngs(latLngs);
@@ -93,5 +105,33 @@ export function createMap(container, { onRouteChange }) {
     redraw();
   });
 
-  return { map, setRoute, clearRoute, setDrawing, undoPoint };
+  /**
+   * Färbt die Route nach der Rückenwind-Bilanz ein: `categories` enthält
+   * pro Segment 'tail' | 'cross' | 'head' (Länge = Punkte − 1).
+   * null entfernt die Einfärbung wieder.
+   */
+  function setSegmentCategories(categories) {
+    segmentLayer.clearLayers();
+    if (!categories || points.length < 2) {
+      if (polyline) polyline.setStyle({ opacity: ROUTE_STYLE.opacity });
+      return;
+    }
+    if (polyline) polyline.setStyle({ opacity: 0 }); // Basislinie darunter aus
+    for (let i = 1; i < points.length; i++) {
+      L.polyline(
+        [
+          [points[i - 1].lat, points[i - 1].lon],
+          [points[i].lat, points[i].lon],
+        ],
+        {
+          color: CATEGORY_COLORS[categories[i - 1]] || ROUTE_STYLE.color,
+          weight: 4,
+          opacity: 0.95,
+          lineCap: 'round',
+        }
+      ).addTo(segmentLayer);
+    }
+  }
+
+  return { map, setRoute, clearRoute, setDrawing, undoPoint, setSegmentCategories };
 }

@@ -8,6 +8,8 @@
  * (270° = Wind aus Westen, Luft strömt nach Osten).
  */
 
+import { haversineKm, bearingDeg } from './gpx.js';
+
 const API_URL = 'https://archive-api.open-meteo.com/v1/archive';
 const DAILY_VARS = [
   'wind_direction_10m_dominant',
@@ -195,6 +197,78 @@ export function computeStats(dailyList, months) {
       weights,
       (p) => p >= RAIN_THRESHOLD_MM
     ),
+  };
+}
+
+/* ------------------------------------------------------------------------
+   Rückenwind-Bilanz: Windverteilung × Fahrtrichtung der Route
+------------------------------------------------------------------------- */
+
+/** Kleinste Winkeldifferenz zweier Richtungen in Grad (0–180). */
+export function angleDiff(a, b) {
+  const d = Math.abs((((a - b) % 360) + 360) % 360);
+  return d > 180 ? 360 - d : d;
+}
+
+/**
+ * Netto-Schub des Winds auf einer Fahrtrichtung, -1 … +1.
+ * Für jeden Herkunftssektor wird die Schubkomponente seiner Strömung
+ * (Herkunft + 180°) auf die Fahrtrichtung projiziert (Kosinus) und mit dem
+ * Tages-Anteil des Sektors gewichtet. +1 = Wind schiebt immer voll von
+ * hinten, -1 = bremst immer voll von vorn, 0 = ausgeglichen/quer.
+ */
+export function pushFactor(travelBearingDeg, sectorShares) {
+  let net = 0;
+  for (let s = 0; s < 8; s++) {
+    const flow = (s * 45 + 180) % 360;
+    const diffRad = (angleDiff(flow, travelBearingDeg) * Math.PI) / 180;
+    net += sectorShares[s] * Math.cos(diffRad);
+  }
+  return net;
+}
+
+// Ab diesem Netto-Schub gilt ein Abschnitt als schiebend bzw. bremsend.
+const PUSH_THRESHOLD = 0.05;
+
+/**
+ * Rückenwind-Bilanz einer Route: pro Segment der Netto-Schub aus
+ * Windverteilung × Fahrtrichtung, eingeteilt in tail (schiebt eher),
+ * cross (neutral/quer) und head (bremst eher). Die Anteile sind nach
+ * Segmentlänge gewichtet ("auf 42 % der Strecke eher Rückenwind").
+ *
+ * `reverse` rechnet die Tour in Gegenrichtung (Ziel → Start), die Segmente
+ * bleiben dabei in der Reihenfolge der Punktliste.
+ */
+export function routeWindExposure(points, sectorShares, reverse = false) {
+  const segments = [];
+  const lengthByCat = { tail: 0, cross: 0, head: 0 };
+  let totalLen = 0;
+  let lastBearing = 0;
+
+  for (let i = 1; i < points.length; i++) {
+    const len = haversineKm(points[i - 1], points[i]);
+    // Bei (nahezu) identischen Punkten ist der Kurs undefiniert → letzten behalten.
+    let bearing = len > 0.001 ? bearingDeg(points[i - 1], points[i]) : lastBearing;
+    if (reverse) bearing = (bearing + 180) % 360;
+    lastBearing = bearing;
+
+    const net = pushFactor(bearing, sectorShares);
+    const cat = net > PUSH_THRESHOLD ? 'tail' : net < -PUSH_THRESHOLD ? 'head' : 'cross';
+    segments.push(cat);
+    lengthByCat[cat] += len;
+    totalLen += len;
+  }
+
+  return {
+    segments,
+    shares:
+      totalLen > 0
+        ? {
+            tail: lengthByCat.tail / totalLen,
+            cross: lengthByCat.cross / totalLen,
+            head: lengthByCat.head / totalLen,
+          }
+        : null,
   };
 }
 

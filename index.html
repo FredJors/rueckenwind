@@ -130,6 +130,24 @@
         <p id="compass-subtitle" class="modal__subtitle"></p>
         <div id="compass-rose"></div>
         <p class="modal__note">Anteil der Tage nach Herkunftsrichtung des Windes</p>
+
+        <div id="exposure-section" class="exposure" hidden>
+          <div class="exposure__track" aria-hidden="true">
+            <span id="exposure-seg-tail" class="exposure__seg exposure__seg--tail"></span>
+            <span id="exposure-seg-cross" class="exposure__seg exposure__seg--cross"></span>
+            <span id="exposure-seg-head" class="exposure__seg exposure__seg--head"></span>
+          </div>
+          <ul class="exposure__legend">
+            <li><span class="exposure__dot exposure__dot--tail"></span>Rückenwind <b id="exposure-tail">–</b></li>
+            <li><span class="exposure__dot exposure__dot--cross"></span>Neutral <b id="exposure-cross">–</b></li>
+            <li><span class="exposure__dot exposure__dot--head"></span>Gegenwind <b id="exposure-head">–</b></li>
+          </ul>
+          <div class="exposure__flip">
+            <span id="exposure-direction">Richtung: Start → Ziel</span>
+            <button type="button" id="exposure-flip" class="btn btn--small">Umkehren</button>
+          </div>
+          <p class="modal__note">Netto-Schub je Streckenabschnitt – die Route auf der Karte ist entsprechend eingefärbt</p>
+        </div>
       </div>
     </div>
 

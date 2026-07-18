@@ -11,6 +11,7 @@ import {
   referenceYears,
   fetchDailyHistory,
   computeStats,
+  routeWindExposure,
 } from './weather.js';
 import * as ui from './ui.js';
 
@@ -30,6 +31,7 @@ const els = {
   pillWindBtn: document.getElementById('pill-wind-btn'),
   compassClose: document.getElementById('compass-close'),
   compassBackdrop: document.getElementById('compass-backdrop'),
+  exposureFlip: document.getElementById('exposure-flip'),
 };
 
 let routePoints = [];
@@ -38,6 +40,8 @@ let drawMode = false;
 let analyzing = false;
 let lastStats = null;        // Ergebnis der letzten Analyse (für das Kompass-Modal)
 let lastAnalysisLabel = ''; // z. B. „Klimastatistik für Juni · 2016–2025"
+let exposureByDirection = null; // { forward, reverse } aus routeWindExposure()
+let routeReversed = false;      // aktuell angezeigte Fahrtrichtung
 
 const mapCtl = createMap(els.map, { onRouteChange });
 const particles = createParticles(els.canvas);
@@ -83,6 +87,9 @@ function updateControls() {
 function resetAnalysis() {
   lastStats = null;
   lastAnalysisLabel = '';
+  exposureByDirection = null;
+  routeReversed = false;
+  mapCtl.setSegmentCategories(null);
   ui.setPills(null);
   ui.hideBadge();
   ui.closeCompass();
@@ -182,6 +189,16 @@ async function analyze() {
       particles.start(stats.directionDeg, stats.windSpeedKmh ?? 0);
     }
 
+    // Rückenwind-Bilanz für beide Fahrtrichtungen + Route einfärben
+    if (stats.sectorShares) {
+      exposureByDirection = {
+        forward: routeWindExposure(routePoints, stats.sectorShares),
+        reverse: routeWindExposure(routePoints, stats.sectorShares, true),
+      };
+      routeReversed = false;
+      mapCtl.setSegmentCategories(exposureByDirection.forward.segments);
+    }
+
     const label = describeMonths(months);
     lastStats = stats;
     lastAnalysisLabel = `${label} · ${years.start}–${years.end}`;
@@ -203,10 +220,22 @@ els.btnAnalyze.addEventListener('click', analyze);
 
 /* --- Windverteilung (Kompass-Modal) -------------------------------------- */
 
+function currentExposure() {
+  if (!exposureByDirection) return null;
+  return routeReversed ? exposureByDirection.reverse : exposureByDirection.forward;
+}
+
 els.pillWindBtn.addEventListener('click', () => {
   if (lastStats?.sectorShares) {
     ui.openCompass(lastStats.sectorShares, lastAnalysisLabel);
+    ui.setExposure(currentExposure(), routeReversed);
   }
+});
+els.exposureFlip.addEventListener('click', () => {
+  if (!exposureByDirection) return;
+  routeReversed = !routeReversed;
+  ui.setExposure(currentExposure(), routeReversed);
+  mapCtl.setSegmentCategories(currentExposure().segments);
 });
 els.compassClose.addEventListener('click', ui.closeCompass);
 els.compassBackdrop.addEventListener('click', ui.closeCompass);

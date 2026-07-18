@@ -161,6 +161,30 @@ export function openCompass(sectorShares, subtitle) {
   el('compass-close').focus();
 }
 
+/**
+ * Zeigt die Rückenwind-Bilanz im Wind-Modal: Streckenanteile als
+ * gestapelter Balken + Legende. `exposure` ist das Ergebnis von
+ * routeWindExposure(); null blendet die Sektion aus.
+ */
+export function setExposure(exposure, reversed) {
+  const section = el('exposure-section');
+  if (!exposure?.shares) {
+    section.hidden = true;
+    return;
+  }
+  const { tail, cross, head } = exposure.shares;
+  el('exposure-seg-tail').style.width = `${tail * 100}%`;
+  el('exposure-seg-cross').style.width = `${cross * 100}%`;
+  el('exposure-seg-head').style.width = `${head * 100}%`;
+  el('exposure-tail').textContent = `${fmt(tail * 100, 0)} %`;
+  el('exposure-cross').textContent = `${fmt(cross * 100, 0)} %`;
+  el('exposure-head').textContent = `${fmt(head * 100, 0)} %`;
+  el('exposure-direction').textContent = reversed
+    ? 'Richtung: Ziel → Start'
+    : 'Richtung: Start → Ziel';
+  section.hidden = false;
+}
+
 export function closeCompass() {
   el('compass-modal').hidden = true;
 }

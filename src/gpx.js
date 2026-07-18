@@ -59,6 +59,17 @@ export function haversineKm(a, b) {
   return 2 * EARTH_RADIUS_KM * Math.asin(Math.sqrt(h));
 }
 
+/** Anfangs-Kurs (Bearing) von a nach b in Grad (0 = N, im Uhrzeigersinn). */
+export function bearingDeg(a, b) {
+  const toRad = (deg) => (deg * Math.PI) / 180;
+  const dLon = toRad(b.lon - a.lon);
+  const y = Math.sin(dLon) * Math.cos(toRad(b.lat));
+  const x =
+    Math.cos(toRad(a.lat)) * Math.sin(toRad(b.lat)) -
+    Math.sin(toRad(a.lat)) * Math.cos(toRad(b.lat)) * Math.cos(dLon);
+  return ((Math.atan2(y, x) * 180) / Math.PI + 360) % 360;
+}
+
 /** Gesamtlänge einer Punktliste in km. */
 export function totalDistanceKm(points) {
   let sum = 0;
