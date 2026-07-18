@@ -42,7 +42,8 @@
         <span id="pill-wind" class="pill__value">–</span>
         <span class="pill__label">Wind aus</span>
       </button>
-      <div class="pill">
+      <button type="button" id="pill-sun-btn" class="pill pill--button"
+              title="Sonnen- und Temperaturdetails anzeigen">
         <svg class="pill__icon" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true">
           <circle cx="12" cy="12" r="4" fill="none" stroke="currentColor" stroke-width="1.8" />
           <path d="M12 3v2M12 19v2M3 12h2M19 12h2M5.6 5.6l1.4 1.4M17 17l1.4 1.4M18.4 5.6L17 7M7 17l-1.4 1.4"
@@ -50,15 +51,16 @@
         </svg>
         <span id="pill-sun" class="pill__value">–</span>
         <span class="pill__label">Sonne/Tag</span>
-      </div>
-      <div class="pill">
+      </button>
+      <button type="button" id="pill-rain-btn" class="pill pill--button"
+              title="Regendetails anzeigen">
         <svg class="pill__icon" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true">
           <path d="M12 3.5s6 6.6 6 11a6 6 0 1 1-12 0c0-4.4 6-11 6-11z"
                 fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" />
         </svg>
         <span id="pill-rain" class="pill__value">–</span>
         <span class="pill__label">Regentage</span>
-      </div>
+      </button>
     </section>
 
     <!-- 5. Eingabe-Panel -->
@@ -148,6 +150,23 @@
           </div>
           <p class="modal__note">Netto-Schub je Streckenabschnitt – die Route auf der Karte ist entsprechend eingefärbt</p>
         </div>
+      </div>
+    </div>
+
+    <!-- Unterfenster: Details zu Sonne bzw. Regen -->
+    <div id="detail-modal" class="modal" hidden>
+      <div id="detail-backdrop" class="modal__backdrop"></div>
+      <div class="modal__panel" role="dialog" aria-modal="true" aria-labelledby="detail-title">
+        <div class="modal__head">
+          <h2 id="detail-title" class="modal__title"></h2>
+          <button type="button" id="detail-close" class="modal__close" aria-label="Schließen">
+            <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true">
+              <path d="M6 6l12 12M18 6L6 18" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+            </svg>
+          </button>
+        </div>
+        <p id="detail-subtitle" class="modal__subtitle"></p>
+        <div id="detail-content"></div>
       </div>
     </div>
 

@@ -29,9 +29,13 @@ const els = {
   drawTools: document.getElementById('draw-tools'),
   btnAnalyze: document.getElementById('btn-analyze'),
   pillWindBtn: document.getElementById('pill-wind-btn'),
+  pillSunBtn: document.getElementById('pill-sun-btn'),
+  pillRainBtn: document.getElementById('pill-rain-btn'),
   compassClose: document.getElementById('compass-close'),
   compassBackdrop: document.getElementById('compass-backdrop'),
   exposureFlip: document.getElementById('exposure-flip'),
+  detailClose: document.getElementById('detail-close'),
+  detailBackdrop: document.getElementById('detail-backdrop'),
 };
 
 let routePoints = [];
@@ -93,6 +97,7 @@ function resetAnalysis() {
   ui.setPills(null);
   ui.hideBadge();
   ui.closeCompass();
+  ui.closeDetail();
   particles.stop();
   ui.setStatus('Bereit');
 }
@@ -239,8 +244,20 @@ els.exposureFlip.addEventListener('click', () => {
 });
 els.compassClose.addEventListener('click', ui.closeCompass);
 els.compassBackdrop.addEventListener('click', ui.closeCompass);
+
+els.pillSunBtn.addEventListener('click', () => {
+  if (lastStats) ui.openSunDetail(lastStats, lastAnalysisLabel);
+});
+els.pillRainBtn.addEventListener('click', () => {
+  if (lastStats) ui.openRainDetail(lastStats, lastAnalysisLabel);
+});
+els.detailClose.addEventListener('click', ui.closeDetail);
+els.detailBackdrop.addEventListener('click', ui.closeDetail);
+
 document.addEventListener('keydown', (e) => {
-  if (e.key === 'Escape' && ui.isCompassOpen()) ui.closeCompass();
+  if (e.key !== 'Escape') return;
+  if (ui.isCompassOpen()) ui.closeCompass();
+  if (ui.isDetailOpen()) ui.closeDetail();
 });
 
 /* --- Start --------------------------------------------------------------- */

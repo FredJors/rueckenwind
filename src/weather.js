@@ -16,10 +16,13 @@ const DAILY_VARS = [
   'wind_speed_10m_max',
   'sunshine_duration',
   'precipitation_sum',
+  'temperature_2m_max',
   'shortwave_radiation_sum', // nur als Fallback, falls sunshine_duration fehlt
 ];
-const RAIN_THRESHOLD_MM = 1;
-const CACHE_PREFIX = 'rueckenwind_v1';
+const RAIN_THRESHOLD_MM = 1;   // ab hier zählt ein Tag als Regentag
+const HEAVY_RAIN_MM = 10;      // "richtig nasser" Tag
+const HEAT_DAY_C = 30;         // Hitzetag (Max-Temperatur)
+const CACHE_PREFIX = 'rueckenwind_v2'; // v2: + temperature_2m_max
 
 /** Die letzten 10 vollständigen Kalenderjahre, z. B. { start: 2016, end: 2025 }. */
 export function referenceYears(now = new Date()) {
@@ -143,11 +146,13 @@ export function collectDays(dailyList, months) {
       if (!wanted.has(m)) continue;
       days.push({
         weight: wanted.get(m) / perMonthCount.get(m),
+        year: Number(daily.time[i].slice(0, 4)),
         dir: daily.wind_direction_10m_dominant?.[i] ?? null,
         speed: daily.wind_speed_10m_max?.[i] ?? null,
         sun: daily.sunshine_duration?.[i] ?? null,
         radiation: daily.shortwave_radiation_sum?.[i] ?? null,
         precip: daily.precipitation_sum?.[i] ?? null,
+        tmax: daily.temperature_2m_max?.[i] ?? null,
       });
     }
   }
@@ -197,7 +202,45 @@ export function computeStats(dailyList, months) {
       weights,
       (p) => p >= RAIN_THRESHOLD_MM
     ),
+    // Detail-Kennzahlen für die Sonne-/Regen-Fenster
+    heavyRainShare: weightedShare(
+      days.map((d) => d.precip),
+      weights,
+      (p) => p >= HEAVY_RAIN_MM
+    ),
+    meanPrecipPerDay: weightedMean(days.map((d) => d.precip), weights),
+    tMaxMean: weightedMean(days.map((d) => d.tmax), weights),
+    heatDayShare: weightedShare(
+      days.map((d) => d.tmax),
+      weights,
+      (t) => t >= HEAT_DAY_C
+    ),
+    perYear: yearlyBreakdown(days),
   };
+}
+
+/**
+ * Kennzahlen je Kalenderjahr (für die Streuungs-Diagramme):
+ * Wie verlässlich ist der 10-Jahres-Mittelwert von Jahr zu Jahr?
+ */
+export function yearlyBreakdown(days) {
+  const byYear = new Map();
+  for (const d of days) {
+    if (!byYear.has(d.year)) byYear.set(d.year, []);
+    byYear.get(d.year).push(d);
+  }
+  return [...byYear.entries()]
+    .sort((a, b) => a[0] - b[0])
+    .map(([year, list]) => {
+      const w = list.map((d) => d.weight);
+      const sun = weightedMean(list.map((d) => d.sun), w);
+      return {
+        year,
+        rainDayShare: weightedShare(list.map((d) => d.precip), w, (p) => p >= RAIN_THRESHOLD_MM),
+        sunHoursPerDay: sun != null ? sun / 3600 : null,
+        tMaxMean: weightedMean(list.map((d) => d.tmax), w),
+      };
+    });
 }
 
 /* ------------------------------------------------------------------------
@@ -317,7 +360,21 @@ function writeCache(key, daily) {
  * (die API akzeptiert kommagetrennte Koordinatenlisten).
  * Liefert ein Array von Daily-Objekten in der Reihenfolge der Punkte.
  */
+/** Cache-Einträge älterer Versionen entfernen (Datenumfang hat sich geändert). */
+function purgeStaleCache() {
+  try {
+    for (const key of Object.keys(localStorage)) {
+      if (key.startsWith('rueckenwind_v') && !key.startsWith(CACHE_PREFIX)) {
+        localStorage.removeItem(key);
+      }
+    }
+  } catch {
+    // localStorage nicht verfügbar – dann gibt es auch nichts aufzuräumen.
+  }
+}
+
 export async function fetchDailyHistory(points, years = referenceYears()) {
+  purgeStaleCache();
   const results = new Array(points.length).fill(null);
   const missing = [];
 

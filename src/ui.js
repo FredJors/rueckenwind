@@ -192,3 +192,128 @@ export function closeCompass() {
 export function isCompassOpen() {
   return !el('compass-modal').hidden;
 }
+
+/* --- Detail-Modal für Sonne & Regen -------------------------------------- */
+
+function openDetail(title, subtitle, contentHtml) {
+  el('detail-title').textContent = title;
+  el('detail-subtitle').textContent = subtitle || '';
+  el('detail-content').innerHTML = contentHtml;
+  el('detail-modal').hidden = false;
+  el('detail-close').focus();
+}
+
+export function closeDetail() {
+  el('detail-modal').hidden = true;
+}
+
+export function isDetailOpen() {
+  return !el('detail-modal').hidden;
+}
+
+/** Kachel-Reihe mit großen Kennzahlen. */
+function statGrid(items) {
+  const cells = items
+    .map(
+      (i) => `
+    <div class="stat-grid__item">
+      <span class="stat-grid__value">${i.value}</span>
+      <span class="stat-grid__label">${i.label}</span>
+    </div>`
+    )
+    .join('');
+  return `<div class="stat-grid">${cells}</div>`;
+}
+
+/**
+ * Kleines Balkendiagramm (10 Jahresbalken) als SVG-String.
+ * `items`: [{ label: "'16", value: 31 | null }]; null wird als "–" gezeigt.
+ */
+function barChartSvg(items, { unit = '', digits = 0 } = {}) {
+  const W = 300;
+  const H = 128;
+  const top = 20;
+  const bottom = 18;
+  const innerH = H - top - bottom;
+  const bw = W / items.length;
+  const max = Math.max(...items.map((i) => i.value ?? 0), 0.001);
+
+  let parts = `<line x1="0" y1="${H - bottom + 0.5}" x2="${W}" y2="${H - bottom + 0.5}"
+                     stroke="#e4e7ec" stroke-width="1"/>`;
+  items.forEach((item, i) => {
+    const cx = i * bw + bw / 2;
+    const h = item.value != null ? (item.value / max) * innerH : 0;
+    const y = top + innerH - h;
+    parts += `
+      <rect x="${(i * bw + bw * 0.18).toFixed(1)}" y="${y.toFixed(1)}"
+            width="${(bw * 0.64).toFixed(1)}" height="${h.toFixed(1)}"
+            rx="3" fill="#d7dce4"/>
+      <text x="${cx.toFixed(1)}" y="${(y - 5).toFixed(1)}" text-anchor="middle"
+            font-size="9" fill="#6b7686">${item.value != null ? fmt(item.value, digits) : '–'}</text>
+      <text x="${cx.toFixed(1)}" y="${H - 5}" text-anchor="middle"
+            font-size="9" fill="#6b7686">${item.label}</text>`;
+  });
+
+  return `<svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg" role="img"
+               aria-label="Jahreswerte${unit ? ` in ${unit}` : ''}">${parts}</svg>`;
+}
+
+const yearLabel = (year) => `'${String(year).slice(2)}`;
+
+/** Unterfenster mit den Regen-Details öffnen. */
+export function openRainDetail(stats, subtitle) {
+  const html =
+    statGrid([
+      {
+        value: stats.rainDayShare != null ? `${fmt(stats.rainDayShare * 100, 0)} %` : '–',
+        label: 'Regentage (≥ 1 mm)',
+      },
+      {
+        value: stats.heavyRainShare != null ? `${fmt(stats.heavyRainShare * 100, 0)} %` : '–',
+        label: 'nasse Tage (≥ 10 mm)',
+      },
+      {
+        value: stats.meanPrecipPerDay != null ? `${fmt(stats.meanPrecipPerDay)} mm` : '–',
+        label: '⌀ Niederschlag/Tag',
+      },
+    ]) +
+    `<h3 class="detail-heading">Regentage je Jahr</h3>` +
+    barChartSvg(
+      stats.perYear.map((y) => ({
+        label: yearLabel(y.year),
+        value: y.rainDayShare != null ? y.rainDayShare * 100 : null,
+      })),
+      { unit: 'Prozent' }
+    ) +
+    `<p class="modal__note">Je ähnlicher die Balken, desto verlässlicher der Mittelwert</p>`;
+  openDetail('Regen', subtitle, html);
+}
+
+/** Unterfenster mit den Sonnen-/Temperatur-Details öffnen. */
+export function openSunDetail(stats, subtitle) {
+  const html =
+    statGrid([
+      {
+        value: stats.sunHoursPerDay != null ? `${fmt(stats.sunHoursPerDay)} h` : '–',
+        label: '⌀ Sonne/Tag',
+      },
+      {
+        value: stats.tMaxMean != null ? `${fmt(stats.tMaxMean, 0)} °C` : '–',
+        label: '⌀ Max-Temperatur',
+      },
+      {
+        value: stats.heatDayShare != null ? `${fmt(stats.heatDayShare * 100, 0)} %` : '–',
+        label: 'Hitzetage (≥ 30 °C)',
+      },
+    ]) +
+    `<h3 class="detail-heading">Sonnenstunden je Jahr</h3>` +
+    barChartSvg(
+      stats.perYear.map((y) => ({
+        label: yearLabel(y.year),
+        value: y.sunHoursPerDay,
+      })),
+      { unit: 'Stunden', digits: 1 }
+    ) +
+    `<p class="modal__note">Je ähnlicher die Balken, desto verlässlicher der Mittelwert</p>`;
+  openDetail('Sonne & Temperatur', subtitle, html);
+}
