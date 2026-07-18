@@ -33,14 +33,15 @@
 
     <!-- 4. Stat-Pills -->
     <section class="pills" aria-label="Klimastatistik">
-      <div class="pill">
+      <button type="button" id="pill-wind-btn" class="pill pill--button"
+              title="Windverteilung anzeigen">
         <svg class="pill__icon" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true">
           <path d="M4 8h9a3 3 0 1 0-3-3M3 12h14a3 3 0 1 1-3 3M4 16h7a2.5 2.5 0 1 1-2.5 2.5"
                 fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
         </svg>
         <span id="pill-wind" class="pill__value">–</span>
         <span class="pill__label">Wind aus</span>
-      </div>
+      </button>
       <div class="pill">
         <svg class="pill__icon" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true">
           <circle cx="12" cy="12" r="4" fill="none" stroke="currentColor" stroke-width="1.8" />
@@ -113,6 +114,24 @@
         <span id="cta-label">Analysieren</span>
       </button>
     </section>
+
+    <!-- Unterfenster: genaue Windverteilung als Kompass -->
+    <div id="compass-modal" class="modal" hidden>
+      <div id="compass-backdrop" class="modal__backdrop"></div>
+      <div class="modal__panel" role="dialog" aria-modal="true" aria-labelledby="compass-title">
+        <div class="modal__head">
+          <h2 id="compass-title" class="modal__title">Windverteilung</h2>
+          <button type="button" id="compass-close" class="modal__close" aria-label="Schließen">
+            <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true">
+              <path d="M6 6l12 12M18 6L6 18" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+            </svg>
+          </button>
+        </div>
+        <p id="compass-subtitle" class="modal__subtitle"></p>
+        <div id="compass-rose"></div>
+        <p class="modal__note">Anteil der Tage nach Herkunftsrichtung des Windes</p>
+      </div>
+    </div>
 
   </main>
   <script type="module" src="/src/main.js"></script>

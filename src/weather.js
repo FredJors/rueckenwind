@@ -87,6 +87,22 @@ export function weightedMean(values, weights) {
   return wSum > 0 ? sum / wSum : null;
 }
 
+/**
+ * Gewichtete Verteilung der Windherkunft über die 8 Kompasssektoren.
+ * Liefert ein Array mit 8 Anteilen (Summe 1, Index 0 = N) oder null,
+ * wenn keine gültigen Richtungen vorliegen.
+ */
+export function sectorDistribution(degrees, weights) {
+  const acc = new Array(8).fill(0);
+  let total = 0;
+  for (let i = 0; i < degrees.length; i++) {
+    if (degrees[i] == null) continue;
+    acc[sectorIndex(degrees[i])] += weights[i];
+    total += weights[i];
+  }
+  return total > 0 ? acc.map((v) => v / total) : null;
+}
+
 /** Gewichteter Anteil der Tage, an denen `predicate` zutrifft. */
 export function weightedShare(values, weights, predicate) {
   let hit = 0;
@@ -152,16 +168,15 @@ export function computeStats(dailyList, months) {
     windDays.map((d) => d.weight * d.speed)
   );
 
-  // Anteil der Tage, an denen der Wind aus dem dominanten Sektor kam.
-  let sectorShare = null;
-  if (directionDeg != null) {
-    const dominant = sectorIndex(directionDeg);
-    sectorShare = weightedShare(
-      windDays.map((d) => d.dir),
-      windDays.map((d) => d.weight),
-      (dir) => sectorIndex(dir) === dominant
-    );
-  }
+  // Verteilung über alle 8 Sektoren; daraus der Anteil des dominanten.
+  const sectorShares = sectorDistribution(
+    windDays.map((d) => d.dir),
+    windDays.map((d) => d.weight)
+  );
+  const sectorShare =
+    directionDeg != null && sectorShares != null
+      ? sectorShares[sectorIndex(directionDeg)]
+      : null;
 
   const weights = days.map((d) => d.weight);
   const sunHoursPerDay = weightedMean(days.map((d) => d.sun), weights);
@@ -170,6 +185,7 @@ export function computeStats(dailyList, months) {
     directionDeg,
     sector: directionDeg != null ? sectorName(directionDeg) : null,
     sectorShare,
+    sectorShares,
     windSpeedKmh: weightedMean(days.map((d) => d.speed), weights),
     sunHoursPerDay: sunHoursPerDay != null ? sunHoursPerDay / 3600 : null,
     // Fallback-Kennzahl (MJ/m² pro Tag), falls sunshine_duration fehlt

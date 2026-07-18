@@ -27,12 +27,17 @@ const els = {
   btnReset: document.getElementById('btn-reset'),
   drawTools: document.getElementById('draw-tools'),
   btnAnalyze: document.getElementById('btn-analyze'),
+  pillWindBtn: document.getElementById('pill-wind-btn'),
+  compassClose: document.getElementById('compass-close'),
+  compassBackdrop: document.getElementById('compass-backdrop'),
 };
 
 let routePoints = [];
 let routeSource = null; // 'gpx' | 'draw' | null
 let drawMode = false;
 let analyzing = false;
+let lastStats = null;        // Ergebnis der letzten Analyse (für das Kompass-Modal)
+let lastAnalysisLabel = ''; // z. B. „Klimastatistik für Juni · 2016–2025"
 
 const mapCtl = createMap(els.map, { onRouteChange });
 const particles = createParticles(els.canvas);
@@ -76,8 +81,11 @@ function updateControls() {
 
 /** Eine geänderte Route oder ein neuer Zeitraum machen die Analyse ungültig. */
 function resetAnalysis() {
+  lastStats = null;
+  lastAnalysisLabel = '';
   ui.setPills(null);
   ui.hideBadge();
+  ui.closeCompass();
   particles.stop();
   ui.setStatus('Bereit');
 }
@@ -175,8 +183,10 @@ async function analyze() {
     }
 
     const label = describeMonths(months);
+    lastStats = stats;
+    lastAnalysisLabel = `${label} · ${years.start}–${years.end}`;
     ui.setStatus(`${label} analysiert`);
-    ui.setPeriodHint(`Klimastatistik für ${label} · ${years.start}–${years.end}`);
+    ui.setPeriodHint(`Klimastatistik für ${lastAnalysisLabel}`);
   } catch (err) {
     ui.setStatus('Bereit');
     ui.setError(`Klimadaten konnten nicht geladen werden: ${err.message}`);
@@ -190,6 +200,19 @@ async function analyze() {
 }
 
 els.btnAnalyze.addEventListener('click', analyze);
+
+/* --- Windverteilung (Kompass-Modal) -------------------------------------- */
+
+els.pillWindBtn.addEventListener('click', () => {
+  if (lastStats?.sectorShares) {
+    ui.openCompass(lastStats.sectorShares, lastAnalysisLabel);
+  }
+});
+els.compassClose.addEventListener('click', ui.closeCompass);
+els.compassBackdrop.addEventListener('click', ui.closeCompass);
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape' && ui.isCompassOpen()) ui.closeCompass();
+});
 
 /* --- Start --------------------------------------------------------------- */
 
